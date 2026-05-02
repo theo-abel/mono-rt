@@ -12,8 +12,16 @@ pub use error::{MonoError, Result};
 pub use guard::MonoThreadGuard;
 pub use types::{
     MonoArray, MonoAssembly, MonoClass, MonoClassField, MonoDomain, MonoFunc, MonoImage,
-    MonoMethod, MonoObject, MonoString, MonoThread, MonoType, MonoVTable,
+    MonoMethod, MonoObject, MonoString, MonoThread, MonoType, MonoVTable, Value,
 };
+
+pub mod prelude {
+    pub use crate::{
+        MonoArray, MonoAssembly, MonoClass, MonoClassField, MonoDomain, MonoError, MonoImage,
+        MonoMethod, MonoObject, MonoString, MonoThread, MonoThreadGuard, MonoType, MonoVTable,
+        Result, Value,
+    };
+}
 
 static BINDINGS: OnceLock<MonoBindings> = OnceLock::new();
 
