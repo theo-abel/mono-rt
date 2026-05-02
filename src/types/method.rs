@@ -21,7 +21,9 @@ impl MonoMethod {
         if ptr.is_null() {
             return Ok(String::new());
         }
-        Ok(unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned())
+        Ok(unsafe { CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned())
     }
 
     /// Invokes the method on `obj` (null for static methods) with the given arguments.
@@ -43,8 +45,7 @@ impl MonoMethod {
         args: *mut *mut c_void,
     ) -> Result<Option<MonoObject>> {
         let mut exc = ptr::null_mut::<c_void>();
-        let result =
-            api()?.runtime_invoke(self.as_ptr(), obj, args, ptr::addr_of_mut!(exc));
+        let result = api()?.runtime_invoke(self.as_ptr(), obj, args, ptr::addr_of_mut!(exc));
 
         if !exc.is_null() {
             let exc_obj = unsafe { MonoObject::from_ptr_unchecked(exc) };

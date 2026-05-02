@@ -28,7 +28,9 @@ impl MonoClassField {
         if ptr.is_null() {
             return Ok(String::new());
         }
-        Ok(unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned())
+        Ok(unsafe { CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned())
     }
 
     /// Returns the [`MonoType`] descriptor for this field.

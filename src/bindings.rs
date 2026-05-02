@@ -212,8 +212,7 @@ impl MonoBindings {
         let mut iter: *mut c_void = std::ptr::null_mut();
         let mut out = Vec::new();
         loop {
-            let ptr =
-                unsafe { (self.mono_class_get_fields)(klass, std::ptr::addr_of_mut!(iter)) };
+            let ptr = unsafe { (self.mono_class_get_fields)(klass, std::ptr::addr_of_mut!(iter)) };
             if ptr.is_null() {
                 break;
             }
@@ -227,8 +226,7 @@ impl MonoBindings {
         let mut iter: *mut c_void = std::ptr::null_mut();
         let mut out = Vec::new();
         loop {
-            let ptr =
-                unsafe { (self.mono_class_get_methods)(klass, std::ptr::addr_of_mut!(iter)) };
+            let ptr = unsafe { (self.mono_class_get_methods)(klass, std::ptr::addr_of_mut!(iter)) };
             if ptr.is_null() {
                 break;
             }

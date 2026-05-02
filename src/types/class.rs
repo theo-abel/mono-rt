@@ -1,4 +1,6 @@
-use super::{MonoClassField, MonoDomain, MonoMethod, MonoObject, MonoType, MonoVTable, mono_handle};
+use super::{
+    MonoClassField, MonoDomain, MonoMethod, MonoObject, MonoType, MonoVTable, mono_handle,
+};
 use crate::{MonoError, Result, api};
 
 use std::ffi::CString;

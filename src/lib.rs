@@ -105,7 +105,10 @@ static BINDINGS: OnceLock<MonoBindings> = OnceLock::new();
 ///   standard Mono builds).
 /// - [`MonoError::AlreadyInitialized`] if `init` has already been called successfully.
 pub fn init(module_name: &str) -> Result<()> {
-    let wide: Vec<u16> = module_name.encode_utf16().chain(std::iter::once(0)).collect();
+    let wide: Vec<u16> = module_name
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     let module = unsafe { GetModuleHandleW(PCWSTR::from_raw(wide.as_ptr())) }
         .map_err(|_| MonoError::DllNotFound(module_name.to_owned()))?;
 
