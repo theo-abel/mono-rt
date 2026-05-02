@@ -56,6 +56,12 @@ lint package=build_package:
 test package=build_package:
     {{ cargo }} test {{ if package == "" { "--workspace" } else { "-p " + package } }}
 
+[doc("Run crate documentation tests.")]
+[group("docs")]
+[group("test")]
+test-docs package=build_package:
+    {{ cargo }} test {{ if package == "" { "--all" } else { "-p " + package } }} --doc
+
 [doc("Build project. Use release parameter for release builds. Use package parameter to build a specific package.")]
 [group("build")]
 build profile=build_profile package=build_package:
@@ -63,3 +69,9 @@ build profile=build_profile package=build_package:
         {{ if profile == "release" { "--release" } else { "" } }} \
         --all-targets \
         {{ if package == "" { "--workspace" } else { "-p " + package } }}
+
+[doc("Build Rust crates documentation")]
+[group("docs")]
+build-rustdocs package=build_package:
+    {{ cargo }} doc {{ if package == "" { "--all" } else { "-p " + package } }} --no-deps --document-private-items
+
