@@ -20,6 +20,16 @@ type MonoInvokeFn = unsafe extern "C" fn(
     *mut *mut c_void,
 ) -> *mut c_void;
 
+/// Resolves all fields of `MonoBindings` by name, using `stringify!` to match each field name to
+/// its Mono export. This keeps `new()` compact regardless of how many exports are added.
+macro_rules! resolve_bindings {
+    ($module:ident => $($field:ident),+ $(,)?) => {
+        Ok(Self {
+            $( $field: resolve($module, stringify!($field))?, )+
+        })
+    };
+}
+
 /// Struct holding function pointers to the Mono API exports we use.
 /// This allows us to resolve them once at startup and call them safely everywhere else without
 /// repeated lookups. The field names mirror the export names for clarity, but the struct itself
@@ -48,6 +58,15 @@ pub(crate) struct MonoBindings {
     mono_object_unbox: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
     mono_class_vtable: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void,
     mono_field_static_get_value: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void),
+    mono_object_new: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void,
+    mono_domain_assembly_open: unsafe extern "C" fn(*mut c_void, *const c_char) -> *mut c_void,
+    mono_string_new: unsafe extern "C" fn(*mut c_void, *const c_char) -> *mut c_void,
+    mono_class_get_fields: unsafe extern "C" fn(*mut c_void, *mut *mut c_void) -> *mut c_void,
+    mono_class_get_methods: unsafe extern "C" fn(*mut c_void, *mut *mut c_void) -> *mut c_void,
+    mono_type_get_type: unsafe extern "C" fn(*mut c_void) -> u32,
+    mono_field_get_name: unsafe extern "C" fn(*mut c_void) -> *const c_char,
+    mono_field_get_type: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
+    mono_method_get_name: unsafe extern "C" fn(*mut c_void) -> *const c_char,
 }
 
 impl MonoBindings {
@@ -57,30 +76,17 @@ impl MonoBindings {
     ///
     /// Returns `MonoError::FnNotFound` if any required export is missing.
     pub fn new(module: HMODULE) -> Result<Self> {
-        let exports = Self {
-            mono_get_root_domain: resolve(module, "mono_get_root_domain")?,
-            mono_thread_attach: resolve(module, "mono_thread_attach")?,
-            mono_thread_detach: resolve(module, "mono_thread_detach")?,
-            mono_assembly_foreach: resolve(module, "mono_assembly_foreach")?,
-            mono_assembly_get_image: resolve(module, "mono_assembly_get_image")?,
-            mono_image_get_name: resolve(module, "mono_image_get_name")?,
-            mono_class_from_name: resolve(module, "mono_class_from_name")?,
-            mono_class_get_field_from_name: resolve(module, "mono_class_get_field_from_name")?,
-            mono_field_get_offset: resolve(module, "mono_field_get_offset")?,
-            mono_class_get_method_from_name: resolve(module, "mono_class_get_method_from_name")?,
-            mono_runtime_invoke: resolve(module, "mono_runtime_invoke")?,
-            mono_array_length: resolve(module, "mono_array_length")?,
-            mono_array_addr_with_size: resolve(module, "mono_array_addr_with_size")?,
-            mono_class_get_type: resolve(module, "mono_class_get_type")?,
-            mono_type_get_object: resolve(module, "mono_type_get_object")?,
-            mono_string_to_utf8: resolve(module, "mono_string_to_utf8")?,
-            mono_free: resolve(module, "mono_free")?,
-            mono_object_unbox: resolve(module, "mono_object_unbox")?,
-            mono_class_vtable: resolve(module, "mono_class_vtable")?,
-            mono_field_static_get_value: resolve(module, "mono_field_static_get_value")?,
-        };
-
-        Ok(exports)
+        resolve_bindings!(module =>
+            mono_get_root_domain, mono_thread_attach, mono_thread_detach,
+            mono_assembly_foreach, mono_assembly_get_image, mono_image_get_name,
+            mono_class_from_name, mono_class_get_field_from_name, mono_field_get_offset,
+            mono_class_get_method_from_name, mono_runtime_invoke, mono_array_length,
+            mono_array_addr_with_size, mono_class_get_type, mono_type_get_object,
+            mono_string_to_utf8, mono_free, mono_object_unbox, mono_class_vtable,
+            mono_field_static_get_value, mono_object_new, mono_domain_assembly_open,
+            mono_string_new, mono_class_get_fields, mono_class_get_methods,
+            mono_type_get_type, mono_field_get_name, mono_field_get_type, mono_method_get_name,
+        )
     }
 
     pub fn get_root_domain(&self) -> *mut c_void {
@@ -187,6 +193,64 @@ impl MonoBindings {
         value: *mut c_void,
     ) {
         unsafe { (self.mono_field_static_get_value)(vtable, field, value) }
+    }
+
+    pub fn object_new(&self, domain: *mut c_void, klass: *mut c_void) -> *mut c_void {
+        unsafe { (self.mono_object_new)(domain, klass) }
+    }
+
+    pub fn domain_assembly_open(&self, domain: *mut c_void, name: *const c_char) -> *mut c_void {
+        unsafe { (self.mono_domain_assembly_open)(domain, name) }
+    }
+
+    pub fn string_new(&self, domain: *mut c_void, text: *const c_char) -> *mut c_void {
+        unsafe { (self.mono_string_new)(domain, text) }
+    }
+
+    /// Collects all fields of `klass` using Mono's iterator protocol.
+    pub fn class_get_fields(&self, klass: *mut c_void) -> Vec<*mut c_void> {
+        let mut iter: *mut c_void = std::ptr::null_mut();
+        let mut out = Vec::new();
+        loop {
+            let ptr =
+                unsafe { (self.mono_class_get_fields)(klass, std::ptr::addr_of_mut!(iter)) };
+            if ptr.is_null() {
+                break;
+            }
+            out.push(ptr);
+        }
+        out
+    }
+
+    /// Collects all methods of `klass` using Mono's iterator protocol.
+    pub fn class_get_methods(&self, klass: *mut c_void) -> Vec<*mut c_void> {
+        let mut iter: *mut c_void = std::ptr::null_mut();
+        let mut out = Vec::new();
+        loop {
+            let ptr =
+                unsafe { (self.mono_class_get_methods)(klass, std::ptr::addr_of_mut!(iter)) };
+            if ptr.is_null() {
+                break;
+            }
+            out.push(ptr);
+        }
+        out
+    }
+
+    pub fn type_get_type(&self, mono_type: *mut c_void) -> u32 {
+        unsafe { (self.mono_type_get_type)(mono_type) }
+    }
+
+    pub fn field_get_name(&self, field: *mut c_void) -> *const c_char {
+        unsafe { (self.mono_field_get_name)(field) }
+    }
+
+    pub fn field_get_type(&self, field: *mut c_void) -> *mut c_void {
+        unsafe { (self.mono_field_get_type)(field) }
+    }
+
+    pub fn method_get_name(&self, method: *mut c_void) -> *const c_char {
+        unsafe { (self.mono_method_get_name)(method) }
     }
 }
 
