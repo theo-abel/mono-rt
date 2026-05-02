@@ -2,53 +2,60 @@ use std::ffi::{CStr, CString};
 use std::ptr;
 
 use super::{MonoClass, mono_handle};
-use crate::{Result, api};
+use crate::{MonoError, Result, api};
 
 struct FindContext<'a> {
     target_name: &'a str,
     result: Option<MonoImage>,
+    api_failed: bool,
 }
 
 mono_handle!(MonoImage);
 
 impl MonoImage {
     /// Finds a loaded assembly image by name.
-    #[must_use]
-    pub fn find<T: AsRef<str>>(name: T) -> Result<Option<Self>> {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn find(name: &str) -> Result<Option<Self>> {
         let mut ctx = FindContext {
-            target_name: name.as_ref(),
+            target_name: name,
             result: None,
+            api_failed: false,
         };
         api()?.assembly_foreach(find_image_callback, ptr::addr_of_mut!(ctx).cast());
+        if ctx.api_failed {
+            return Err(MonoError::Uninitialized);
+        }
         Ok(ctx.result)
     }
 
-    /// Resolves a class in this image.
-    #[must_use]
-    pub fn get_class_from_name<T: AsRef<str>>(
-        self,
-        namespace: T,
-        name: T,
-    ) -> Result<Option<MonoClass>> {
-        // TODO: handle cstrings results !! we don't want panic here
-        let ns = CString::new(namespace.as_ref()).expect("CString failed");
-        let nm = CString::new(name.as_ref()).expect("CString failed");
+    /// Resolves a class in this image by namespace and name.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::NullByteInName`] if `namespace` or `name` contain an interior null byte.
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn class_from_name(self, namespace: &str, name: &str) -> Result<Option<MonoClass>> {
+        let ns = CString::new(namespace).map_err(|_| MonoError::NullByteInName)?;
+        let nm = CString::new(name).map_err(|_| MonoError::NullByteInName)?;
         let ptr = api()?.class_from_name(self.as_ptr(), ns.as_ptr(), nm.as_ptr());
         Ok(MonoClass::from_ptr(ptr))
     }
 }
 
-/// Callback for `mono_assembly_foreach` to find an image by name. Stores the result in the provided context.
+/// Callback for `mono_assembly_foreach` to find an image by name.
 ///
 /// # Safety
 ///
-/// `assembly` is a valid `MonoAssembly*` on a Mono-attached thread.
-/// `user_data` is a valid pointer to a `FindContext`.
+/// `assembly` must be a valid `MonoAssembly*` and `user_data` must be a valid pointer to a
+/// `FindContext`, both on a Mono-attached thread.
 unsafe extern "C" fn find_image_callback(assembly: *mut c_void, user_data: *mut c_void) {
-    // TODO: find a way to avoid returning early on API access failure, maybe by caching the API in a static or something? :c
-    let api = match api() {
-        Ok(api) => api,
-        Err(_) => return, // we can't access the API, just skip processing
+    let Ok(api) = api() else {
+        let ctx = unsafe { &mut *user_data.cast::<FindContext<'_>>() };
+        ctx.api_failed = true;
+        return;
     };
 
     let ctx = unsafe { &mut *user_data.cast::<FindContext<'_>>() };
