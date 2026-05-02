@@ -1,0 +1,46 @@
+################################################################################
+# Package settings
+################################################################################
+
+resolver = "3"  # see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
+
+[package]
+name = "mono-rt"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95.0"
+documentation = ""
+homepage = ""
+repository = "<https://github.com/theo-abel/mono-rt/>"
+license = "GPL-3.0-only"
+publish = true
+
+[dependencies]
+thiserror = "2.0.18"
+tracing = "0.1.44"
+
+################################################################################
+# Lint settings
+################################################################################
+
+[lints.clippy]
+# Enable pedantic lint group
+pedantic = "warn"
+# restriction = "warn" # TODO: enable when ready to suffer
+
+[lints.rust]
+# Deny all warnings
+warnings = "deny"
+
+################################################################################
+# Profile settings
+################################################################################
+
+[profile.release]
+opt-level = 3  # use better optimizations
+debug = false
+strip = true
+# enable link-time optimization, which can improve performance
+# but also increase build time
+lto = true
+codegen-units = 1
