@@ -1,0 +1,77 @@
+name: Rust CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "src/**"
+      - "Cargo.lock"
+  pull_request:
+    paths:
+      - "src/**"
+      - "Cargo.lock"
+
+# cancel in-progress runs on new commits to the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  MAIN_BRANCH: main
+
+jobs:
+  build:
+    name: Build & lint
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        # dtolnay/rust-toolchain automatically adds problem matchers for annotations
+        run: cargo clippy --all-targets --all
+
+      - name: Build project
+        run: cargo build
+
+      - name: Generate documentation
+        run: cargo doc --no-deps --document-private-items
+
+  test:
+    name: Test suite
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+
+      - name: Run tests (nextest)
+        run: cargo nextest run --all
+
+      - name: Run doctests
+        run: cargo test --doc
