@@ -13,6 +13,7 @@ mod mono_type;
 mod object;
 mod string;
 mod thread;
+mod type_kind;
 mod value;
 mod vtable;
 
@@ -27,6 +28,7 @@ pub use mono_type::MonoType;
 pub use object::MonoObject;
 pub use string::MonoString;
 pub use thread::MonoThread;
+pub use type_kind::TypeKind;
 pub use value::Value;
 pub use vtable::MonoVTable;
 

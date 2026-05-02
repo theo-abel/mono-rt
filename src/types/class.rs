@@ -1,4 +1,4 @@
-use super::{MonoClassField, MonoDomain, MonoMethod, MonoType, MonoVTable, mono_handle};
+use super::{MonoClassField, MonoDomain, MonoMethod, MonoObject, MonoType, MonoVTable, mono_handle};
 use crate::{MonoError, Result, api};
 
 use std::ffi::CString;
@@ -54,5 +54,44 @@ impl MonoClass {
     pub fn vtable(self, domain: MonoDomain) -> Result<Option<MonoVTable>> {
         let ptr = api()?.class_vtable(domain.as_ptr(), self.as_ptr());
         Ok(MonoVTable::from_ptr(ptr))
+    }
+
+    /// Allocates a new uninitialized instance of this class in the given domain.
+    ///
+    /// The returned object is not yet constructed — call the `.ctor` method via
+    /// [`MonoMethod::invoke`] to initialize it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn new_object(self, domain: MonoDomain) -> Result<Option<MonoObject>> {
+        let ptr = api()?.object_new(domain.as_ptr(), self.as_ptr());
+        Ok(MonoObject::from_ptr(ptr))
+    }
+
+    /// Returns all fields declared on this class.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn fields(self) -> Result<Vec<MonoClassField>> {
+        Ok(api()?
+            .class_get_fields(self.as_ptr())
+            .into_iter()
+            .filter_map(MonoClassField::from_ptr)
+            .collect())
+    }
+
+    /// Returns all methods declared on this class.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn methods(self) -> Result<Vec<MonoMethod>> {
+        Ok(api()?
+            .class_get_methods(self.as_ptr())
+            .into_iter()
+            .filter_map(MonoMethod::from_ptr)
+            .collect())
     }
 }

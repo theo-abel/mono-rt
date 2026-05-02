@@ -12,14 +12,14 @@ pub use error::{MonoError, Result};
 pub use guard::MonoThreadGuard;
 pub use types::{
     MonoArray, MonoAssembly, MonoClass, MonoClassField, MonoDomain, MonoFunc, MonoImage,
-    MonoMethod, MonoObject, MonoString, MonoThread, MonoType, MonoVTable, Value,
+    MonoMethod, MonoObject, MonoString, MonoThread, MonoType, MonoVTable, TypeKind, Value,
 };
 
 pub mod prelude {
     pub use crate::{
         MonoArray, MonoAssembly, MonoClass, MonoClassField, MonoDomain, MonoError, MonoImage,
         MonoMethod, MonoObject, MonoString, MonoThread, MonoThreadGuard, MonoType, MonoVTable,
-        Result, Value,
+        Result, TypeKind, Value,
     };
 }
 

@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use super::{MonoObject, Value, mono_handle};
 use crate::{MonoError, Result, api};
 
@@ -6,6 +8,22 @@ use std::ptr;
 mono_handle!(MonoMethod);
 
 impl MonoMethod {
+    /// Returns the name of this method as reported by the Mono runtime.
+    ///
+    /// The returned string is copied out of Mono's metadata and is safe to use beyond the
+    /// lifetime of the runtime handle.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn name(self) -> Result<String> {
+        let ptr = api()?.method_get_name(self.as_ptr());
+        if ptr.is_null() {
+            return Ok(String::new());
+        }
+        Ok(unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned())
+    }
+
     /// Invokes the method on `obj` (null for static methods) with the given arguments.
     ///
     /// Returns `Ok(Some(result))` on success, `Ok(None)` when the method returns void, and
