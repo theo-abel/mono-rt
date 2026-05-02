@@ -2,8 +2,6 @@
 # Package settings
 ################################################################################
 
-resolver = "3"  # see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
-
 [package]
 name = "mono-rt"
 version = "0.1.0"
@@ -18,6 +16,7 @@ publish = true
 [dependencies]
 thiserror = "2.0.18"
 tracing = "0.1.44"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_LibraryLoader"] }
 
 ################################################################################
 # Lint settings
