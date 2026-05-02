@@ -1,35 +1,57 @@
 use super::{MonoClassField, MonoDomain, MonoMethod, MonoType, MonoVTable, mono_handle};
-use crate::{Result, api};
+use crate::{MonoError, Result, api};
 
 use std::ffi::CString;
 
 mono_handle!(MonoClass);
 
-// TODO: handle all failing cstring properly
-
 impl MonoClass {
-    #[must_use]
-    pub fn get_field(self, name: &str) -> Result<Option<MonoClassField>> {
-        let c_name = CString::new(name).ok().expect("CString failed");
+    /// Looks up a field by name on this class.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::NullByteInName`] if `name` contains an interior null byte.
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn field(self, name: &str) -> Result<Option<MonoClassField>> {
+        let c_name = CString::new(name).map_err(|_| MonoError::NullByteInName)?;
         let ptr = api()?.class_get_field_from_name(self.as_ptr(), c_name.as_ptr());
         Ok(MonoClassField::from_ptr(ptr))
     }
 
-    #[must_use]
-    pub fn get_method(self, name: &str, param_count: i32) -> Result<Option<MonoMethod>> {
-        let c_name = CString::new(name).ok().expect("CString failed");
-        let ptr = api()?.class_get_method_from_name(self.as_ptr(), c_name.as_ptr(), param_count);
+    /// Looks up a method by name on this class.
+    ///
+    /// `param_count` restricts the search to a specific arity; pass `None` to match any overload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::NullByteInName`] if `name` contains an interior null byte.
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn method(self, name: &str, param_count: Option<i32>) -> Result<Option<MonoMethod>> {
+        let c_name = CString::new(name).map_err(|_| MonoError::NullByteInName)?;
+        let ptr = api()?.class_get_method_from_name(
+            self.as_ptr(),
+            c_name.as_ptr(),
+            param_count.unwrap_or(-1),
+        );
         Ok(MonoMethod::from_ptr(ptr))
     }
 
-    #[must_use]
-    pub fn get_type(self) -> Result<Option<MonoType>> {
+    /// Returns the [`MonoType`] descriptor for this class.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn mono_type(self) -> Result<Option<MonoType>> {
         let ptr = api()?.class_get_type(self.as_ptr());
         Ok(MonoType::from_ptr(ptr))
     }
 
-    #[must_use]
-    pub fn get_vtable(self, domain: MonoDomain) -> Result<Option<MonoVTable>> {
+    /// Returns the vtable for this class in the given domain.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn vtable(self, domain: MonoDomain) -> Result<Option<MonoVTable>> {
         let ptr = api()?.class_vtable(domain.as_ptr(), self.as_ptr());
         Ok(MonoVTable::from_ptr(ptr))
     }

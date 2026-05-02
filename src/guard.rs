@@ -7,6 +7,8 @@ use std::marker::PhantomData;
 
 use super::{Result, api};
 
+/// Dropping this guard immediately detaches the current thread from the Mono runtime.
+#[must_use = "dropping this guard immediately detaches the thread from Mono"]
 pub struct MonoThreadGuard {
     thread_ptr: *mut c_void,
     _marker: PhantomData<*mut ()>,
@@ -15,11 +17,14 @@ pub struct MonoThreadGuard {
 impl MonoThreadGuard {
     /// Attaches the current thread to the Mono runtime.
     ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    ///
     /// # Safety
     ///
     /// Must be called on the thread that will own all Mono interactions.
     /// The returned guard must be dropped on that same thread.
-    #[must_use]
     pub unsafe fn attach() -> Result<Self> {
         let domain = api()?.get_root_domain();
         let thread_ptr = api()?.thread_attach(domain);
@@ -33,7 +38,9 @@ impl MonoThreadGuard {
 
 impl Drop for MonoThreadGuard {
     fn drop(&mut self) {
-        // safe to use unwrap here since this can't be called if the API is not available
-        api().unwrap().thread_detach(self.thread_ptr)
+        match api() {
+            Ok(api) => api.thread_detach(self.thread_ptr),
+            Err(e) => tracing::warn!("could not detach Mono thread on drop: {e}"),
+        }
     }
 }

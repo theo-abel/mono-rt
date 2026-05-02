@@ -4,18 +4,25 @@ use crate::{Result, api};
 mono_handle!(MonoClassField);
 
 impl MonoClassField {
-    #[must_use]
-    pub fn get_offset(self) -> Result<u32> {
+    /// Returns the byte offset of this field within its declaring class.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn offset(self) -> Result<u32> {
         Ok(api()?.field_get_offset(self.as_ptr()))
     }
 
-    /// Reads a static field value into the `out` buffer.
+    /// Reads the static field value into the `out` buffer via the given vtable.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
     ///
     /// # Safety
     ///
-    /// `out` must point to valid memory for the field type.
-    pub unsafe fn get_static_value(self, vtable: MonoVTable, out: *mut c_void) -> Result<()> {
-        // TODO: may return a boxed value instead of writing to out ?
+    /// `out` must point to valid memory sized for the field type.
+    pub unsafe fn static_value(self, vtable: MonoVTable, out: *mut c_void) -> Result<()> {
         api()?.field_static_get_value(vtable.as_ptr(), self.as_ptr(), out);
         Ok(())
     }

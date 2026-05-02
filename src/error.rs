@@ -14,4 +14,8 @@ pub enum MonoError {
     AlreadyInitialized,
     #[error("Mono API not initialized! Call `mono::init()` first.")]
     Uninitialized,
+    #[error("string argument contains an interior null byte")]
+    NullByteInName,
+    #[error("managed exception was thrown during method invocation")]
+    ManagedException(crate::MonoObject),
 }
