@@ -14,6 +14,9 @@ license = "GPL-3.0-only"
 keywords = ["mono", "unity", "runtime", "bindings", "gamedev"]
 categories = ["game-development", "api-bindings", "os::windows-apis"]
 
+[package.metadata.docs.rs]
+targets = ["x86_64-pc-windows-msvc"]
+
 [dependencies]
 thiserror = "2.0.18"
 tracing = "0.1.44"
