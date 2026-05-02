@@ -51,10 +51,18 @@ lint package=build_package:
         --all-features \
         {{ if package == "" { "--all" } else { "-p " + package } }}
 
+[doc("Check for unused dependencies.")]
+[group("lint")]
+udeps:
+    {{ cargo }} udeps --all-targets --backend depinfo
+
 [doc("Run all tests.")]
 [group("test")]
 test package=build_package:
-    {{ cargo }} test {{ if package == "" { "--workspace" } else { "-p " + package } }}
+    {{ cargo }} nextest run \
+        {{ if package == "" { "--workspace" } else { "-p " + package } }} \
+        --all-features \
+        --all-targets
 
 [doc("Run crate documentation tests.")]
 [group("docs")]
@@ -74,4 +82,3 @@ build profile=build_profile package=build_package:
 [group("docs")]
 build-rustdocs package=build_package:
     {{ cargo }} doc {{ if package == "" { "--all" } else { "-p " + package } }} --no-deps --document-private-items
-
