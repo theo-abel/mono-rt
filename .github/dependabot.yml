@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+    groups:
+      actions-updates:
+        dependency-type: "production"
+        applies-to: "version-updates"
+      actions-dev-updates:
+        dependency-type: "development"
+        applies-to: "version-updates"
+
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+    groups:
+      dep-updates:
+        dependency-type: "production"
+        applies-to: "version-updates"
+      dev-updates:
+        dependency-type: "development"
+        applies-to: "version-updates"
