@@ -7,11 +7,12 @@ name = "mono-rt"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.95.0"
-documentation = ""
-homepage = ""
-repository = "<https://github.com/theo-abel/mono-rt/>"
+description = "Dynamic bindings to the Mono runtime for process injection into Unity games and Mono-hosted applications on Windows"
+readme = "README.md"
+repository = "https://github.com/theo-abel/mono-rt"
 license = "GPL-3.0-only"
-publish = true
+keywords = ["mono", "unity", "runtime", "bindings", "gamedev"]
+categories = ["game-development", "api-bindings", "os::windows-apis"]
 
 [dependencies]
 thiserror = "2.0.18"
