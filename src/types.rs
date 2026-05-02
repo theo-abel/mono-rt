@@ -13,6 +13,7 @@ mod mono_type;
 mod object;
 mod string;
 mod thread;
+mod value;
 mod vtable;
 
 pub use array::MonoArray;
@@ -26,6 +27,7 @@ pub use mono_type::MonoType;
 pub use object::MonoObject;
 pub use string::MonoString;
 pub use thread::MonoThread;
+pub use value::Value;
 pub use vtable::MonoVTable;
 
 use std::ffi::c_void;
@@ -39,7 +41,7 @@ macro_rules! mono_handle {
         use std::{ffi::c_void, ptr::NonNull};
 
         #[repr(transparent)]
-        #[derive(Clone, Copy)]
+        #[derive(Clone, Copy, Debug)]
         pub struct $name(NonNull<c_void>);
 
         impl $name {
