@@ -3,7 +3,7 @@ use std::ptr;
 
 /// A typed Mono method argument.
 ///
-/// Use this with [`MonoMethod::invoke_with`] to pass arguments without manually building
+/// Use this with [`crate::MonoMethod::invoke_with`] to pass arguments without manually building
 /// pointer arrays. The caller is still responsible for matching the argument types to the
 /// method's actual signature - Mono does not validate types at the call site.
 #[derive(Clone, Copy, Debug)]

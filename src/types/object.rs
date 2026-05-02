@@ -8,7 +8,7 @@ impl MonoObject {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn unbox(self) -> Result<*mut c_void> {
         Ok(api()?.object_unbox(self.as_ptr()))
     }

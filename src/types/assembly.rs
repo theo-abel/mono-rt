@@ -8,7 +8,7 @@ impl MonoAssembly {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn image(self) -> Result<Option<MonoImage>> {
         let ptr = api()?.assembly_get_image(self.as_ptr());
         Ok(MonoImage::from_ptr(ptr))
