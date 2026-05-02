@@ -3,7 +3,7 @@
 //! from the Mono DLL.
 
 use std::ffi::{CString, c_char, c_void};
-use std::{mem, ptr};
+use std::mem;
 
 use windows::{
     Win32::{Foundation::HMODULE, System::LibraryLoader::GetProcAddress},
@@ -144,21 +144,8 @@ impl MonoBindings {
         obj: *mut c_void,
         params: *mut *mut c_void,
         exc: *mut *mut c_void,
-    ) -> Result<*mut c_void> {
-        let result = unsafe { (self.mono_runtime_invoke)(method, obj, params, exc) };
-
-        if result.is_null() {
-            // a null result can indicate either a void return or a thrown exception,
-            // so we check the exc pointer to be sure
-            let exc_ptr = unsafe { *exc };
-            if !exc_ptr.is_null() {
-                // the method threw a managed exception, which we treat as a non-error case and return None
-                // TODO: provide a stronger API for inspecting the error
-                return Ok(ptr::null_mut());
-            }
-        }
-
-        Ok(result)
+    ) -> *mut c_void {
+        unsafe { (self.mono_runtime_invoke)(method, obj, params, exc) }
     }
 
     pub fn array_length(&self, array: *mut c_void) -> usize {

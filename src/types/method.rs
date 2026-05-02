@@ -1,20 +1,20 @@
-use super::{MonoObject, mono_handle};
-use crate::{Result, api};
+use super::{MonoObject, Value, mono_handle};
+use crate::{MonoError, Result, api};
 
 use std::ptr;
 
 mono_handle!(MonoMethod);
 
 impl MonoMethod {
-    /// Invokes the method on `obj` (null for static) with arguments.
+    /// Invokes the method on `obj` (null for static methods) with the given arguments.
     ///
-    /// Returns `Ok(Some(result))` on success, `Ok(None)` when the method throws a managed
-    /// exception or returns void, and `Err(MonoAv)` when a hardware access violation is
-    /// caught inside the SEH shim (e.g. JIT pages freed during scene teardown).
+    /// Returns `Ok(Some(result))` on success, `Ok(None)` when the method returns void, and
+    /// `Err(MonoError::ManagedException(exc))` when the invocation throws a managed exception.
     ///
     /// # Errors
     ///
-    /// Returns `Err(MonoAv)` when the SEH shim catches a hardware access violation.
+    /// Returns [`MonoError::ManagedException`] when a managed exception is thrown.
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
     ///
     /// # Safety
     ///
@@ -25,11 +25,42 @@ impl MonoMethod {
         args: *mut *mut c_void,
     ) -> Result<Option<MonoObject>> {
         let mut exc = ptr::null_mut::<c_void>();
-        let result = api()?.runtime_invoke(self.as_ptr(), obj, args, ptr::addr_of_mut!(exc))?;
-        if exc.is_null() {
-            Ok(MonoObject::from_ptr(result))
-        } else {
-            Ok(None)
+        let result =
+            api()?.runtime_invoke(self.as_ptr(), obj, args, ptr::addr_of_mut!(exc));
+
+        if !exc.is_null() {
+            let exc_obj = unsafe { MonoObject::from_ptr_unchecked(exc) };
+            return Err(MonoError::ManagedException(exc_obj));
         }
+
+        Ok(MonoObject::from_ptr(result))
+    }
+
+    /// Typed variant of [`invoke`](Self::invoke): builds the args array from `args` automatically.
+    ///
+    /// Prefer this over `invoke` when argument types are known at compile time. The caller is still
+    /// responsible for matching the `Value` variants to the method's actual parameter types.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::ManagedException`] when a managed exception is thrown.
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    ///
+    /// # Safety
+    ///
+    /// `obj` must be a valid Mono object pointer (or null for static methods). Each [`Value`]
+    /// in `args` must correspond to the correct parameter type expected by the method.
+    pub unsafe fn invoke_with(
+        self,
+        obj: *mut c_void,
+        args: &[Value],
+    ) -> Result<Option<MonoObject>> {
+        let mut ptrs: Vec<*mut c_void> = args.iter().map(Value::as_arg_ptr).collect();
+        let args_ptr = if ptrs.is_empty() {
+            std::ptr::null_mut()
+        } else {
+            ptrs.as_mut_ptr()
+        };
+        unsafe { self.invoke(obj, args_ptr) }
     }
 }
