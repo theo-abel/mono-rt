@@ -9,10 +9,12 @@ on:
     paths:
       - "src/**"
       - "Cargo.lock"
+      - "tests/**"
   pull_request:
     paths:
       - "src/**"
       - "Cargo.lock"
+      - "tests/**"
 
 # cancel in-progress runs on new commits to the same PR
 concurrency:
@@ -75,3 +77,20 @@ jobs:
 
       - name: Run doctests
         run: cargo test --doc
+
+      - name: Install Mono runtime
+        run: choco install mono -y --no-progress
+
+      - name: Verify Mono DLL exists
+        run: |
+          $dll = "C:\Program Files\Mono\bin\mono-2.0-sgen.dll"
+          if (-not (Test-Path $dll)) {
+            Write-Error "mono-2.0-sgen.dll not found at $dll"
+            exit 1
+          }
+
+      - name: Run integration tests
+        run: >
+          cargo run --bin mono-rt-integration --
+          "C:\Program Files\Mono\bin\mono-2.0-sgen.dll"
+          "${{ github.workspace }}\tests\fixtures\MonoRtFixture.dll"
