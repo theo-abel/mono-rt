@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
 
-      - run: cargo test
+      - run: cargo test --locked
 
       - name: Publish to crates.io
         run: cargo publish --locked
