@@ -91,6 +91,6 @@ jobs:
 
       - name: Run integration tests
         run: >
-          cargo run --bin mono-rt-integration --
+          cargo run --features integration-tests --bin mono-rt-integration --
           "C:\Program Files\Mono\bin\mono-2.0-sgen.dll"
           "${{ github.workspace }}\tests\fixtures\MonoRtFixture.dll"

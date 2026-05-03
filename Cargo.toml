@@ -17,6 +17,20 @@ categories = ["game-development", "api-bindings", "os::windows-apis"]
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc"]
 
+# exclude integration-test sources and fixture assets from the published crate
+exclude = [
+    "src/bin/**",
+    "tests/fixtures/**",
+]
+
+################################################################################
+# Features
+################################################################################
+
+[features]
+# enables the mono-rt-integration test binary; not part of the public API
+integration-tests = []
+
 [dependencies]
 thiserror = "2.0.18"
 tracing = "0.1.44"
@@ -25,6 +39,7 @@ windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_Li
 [[bin]]
 name = "mono-rt-integration"
 path = "src/bin/integration/main.rs"
+required-features = ["integration-tests"]
 
 ################################################################################
 # Lint settings

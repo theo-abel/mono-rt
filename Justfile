@@ -78,7 +78,7 @@ test-docs package=build_package:
 [group("test")]
 test-integration mono_dll assemblies_path="":
     $env:MONO_PATH = "{{ assemblies_path }}"; \
-        {{ cargo }} run --bin mono-rt-integration \
+        {{ cargo }} run --features integration-tests --bin mono-rt-integration \
         -- "{{ mono_dll }}" \
         "tests\fixtures\MonoRtFixture.dll"
 
