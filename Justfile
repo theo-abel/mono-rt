@@ -70,6 +70,18 @@ test package=build_package:
 test-docs package=build_package:
     {{ cargo }} test {{ if package == "" { "--all" } else { "-p " + package } }} --doc
 
+[doc("Run the integration test suite against a live Mono runtime.\
+    \nArguments:\
+    \n  mono_dll        : path to the Mono runtime DLL (mono-2.0-bdwgc.dll or equivalent)\
+    \n  assemblies_path : directory containing mscorlib.dll; required when the DLL comes\
+    \n                    from a Unity game whose assemblies are not under lib/mono/4.5/")]
+[group("test")]
+test-integration mono_dll assemblies_path="":
+    $env:MONO_PATH = "{{ assemblies_path }}"; \
+        {{ cargo }} run --bin mono-rt-integration \
+        -- "{{ mono_dll }}" \
+        "tests\fixtures\MonoRtFixture.dll"
+
 [doc("Build project. Use release parameter for release builds. Use package parameter to build a specific package.")]
 [group("build")]
 build profile=build_profile package=build_package:
