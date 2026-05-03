@@ -10,6 +10,8 @@ set allow-duplicate-recipes
 # ------------------------------
 
 cargo := require("cargo")
+git_bin := require("git")
+git := "& \"" + git_bin + "\"" # thanks powershell >:(
 
 # ------------------------------
 # Variables
@@ -88,6 +90,12 @@ bump version:
     $c = (Get-Content Cargo.toml -Raw) -replace '(?m)^version = "\d+\.\d+\.\d+"', 'version = "{{ version }}"'; [IO.File]::WriteAllText((Join-Path $PWD "Cargo.toml"), $c)
     $r = (Get-Content README.md -Raw) -replace 'mono-rt = "\d+\.\d+\.\d+"', 'mono-rt = "{{ version }}"'; [IO.File]::WriteAllText((Join-Path $PWD "README.md"), $r)
     {{ cargo }} generate-lockfile
+
+[doc("Create a git tag for the current version and push it to the remote repository.")]
+[group("release")]
+release version:
+    {{ git }} tag -a "v{{ version }}" -m "Release {{ version }}"
+    {{ git }} push origin "v{{ version }}"
 
 [doc("Build project. Use release parameter for release builds. Use package parameter to build a specific package.")]
 [group("build")]
