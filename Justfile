@@ -82,6 +82,13 @@ test-integration mono_dll assemblies_path="":
         -- "{{ mono_dll }}" \
         "tests\fixtures\MonoRtFixture.dll"
 
+[doc("Bump the crate version in Cargo.toml and README.md, then regenerate Cargo.lock.\nExample: just bump 0.3.0")]
+[group("release")]
+bump version:
+    $c = (Get-Content Cargo.toml -Raw) -replace '(?m)^version = "\d+\.\d+\.\d+"', 'version = "{{ version }}"'; [IO.File]::WriteAllText((Join-Path $PWD "Cargo.toml"), $c)
+    $r = (Get-Content README.md -Raw) -replace 'mono-rt = "\d+\.\d+\.\d+"', 'mono-rt = "{{ version }}"'; [IO.File]::WriteAllText((Join-Path $PWD "README.md"), $r)
+    {{ cargo }} generate-lockfile
+
 [doc("Build project. Use release parameter for release builds. Use package parameter to build a specific package.")]
 [group("build")]
 build profile=build_profile package=build_package:
