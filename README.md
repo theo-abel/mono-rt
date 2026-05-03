@@ -24,7 +24,7 @@ Add the dependency:
 
 ```toml
 [dependencies]
-mono-rt = "0.1.0"
+mono-rt = "0.2.0"
 # or, for the latest commit:
 mono-rt = { git = "https://github.com/theo-abel/mono-rt" }
 ```
