@@ -22,6 +22,10 @@ thiserror = "2.0.18"
 tracing = "0.1.44"
 windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_LibraryLoader"] }
 
+[[bin]]
+name = "mono-rt-integration"
+path = "src/bin/integration/main.rs"
+
 ################################################################################
 # Lint settings
 ################################################################################
