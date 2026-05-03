@@ -101,6 +101,49 @@ modding and runtime inspection; lower-level or rarely-needed functions can be ad
 
 Everything else - null checks, CString conversion, error propagation - is handled by the library.
 
+## Integration tests
+
+The crate ships a standalone test binary (`mono-rt-integration`) that exercises every public
+API layer against a real, live Mono runtime. Unlike the unit tests, this binary must run
+against an actual Mono DLL, it is not part of `cargo nextest run`.
+
+### Prerequisites
+
+You need a `mono-2.0-bdwgc.dll` (Unity 2018+) or `mono-2.0-sgen.dll` (standard Mono
+install) already on disk. The binary never modifies the DLL or the process it targets; it
+only loads it in-process to call the inspection API.
+
+### Running
+
+Use the `test-integration` recipe. The first argument is the path to the Mono DLL; the
+second (optional) argument is the directory that contains `mscorlib.dll`. The second
+argument is only needed when the DLL comes from a game whose managed assemblies are not
+stored under the standard `lib/mono/4.5/` layout next to the runtime.
+
+**Standard Mono installation** (`choco install mono` or the official installer):
+
+```powershell
+just test-integration "C:\Program Files\Mono\bin\mono-2.0-sgen.dll"
+```
+
+**Unity game DLL** (assemblies live in `<Game>_Data\Managed\`):
+
+```powershell
+just test-integration `
+    "C:\path\to\game\MonoBleedingEdge\EmbedRuntime\mono-2.0-bdwgc.dll" `
+    "C:\path\to\game\GameName_Data\Managed"
+```
+
+A passing run prints one `[PASS]` line per test and exits with code 0:
+
+```
+[PASS] init_succeeds
+[PASS] root_domain_is_some
+...
+[PASS] thread_guard_attach_drop
+--- 16 passed, 0 failed ---
+```
+
 ## Credits
 
 Some inspiration was drawn from the [mono-rs](https://github.com/b4rti/mono-rs) project, particularly the public API design. Shoot out to Bartosz for paving the way!

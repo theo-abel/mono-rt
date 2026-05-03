@@ -8,7 +8,7 @@ impl MonoArray {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn len(self) -> Result<usize> {
         Ok(api()?.array_length(self.as_ptr()))
     }
@@ -17,7 +17,7 @@ impl MonoArray {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn is_empty(self) -> Result<bool> {
         Ok(self.len()? == 0)
     }
@@ -26,7 +26,7 @@ impl MonoArray {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn addr(self, size: i32, index: usize) -> Result<*mut c_void> {
         Ok(api()?.array_addr_with_size(self.as_ptr(), size, index))
     }

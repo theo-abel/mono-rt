@@ -10,7 +10,7 @@ impl MonoClassField {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn offset(self) -> Result<u32> {
         Ok(api()?.field_get_offset(self.as_ptr()))
     }
@@ -22,7 +22,7 @@ impl MonoClassField {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn name(self) -> Result<String> {
         let ptr = api()?.field_get_name(self.as_ptr());
         if ptr.is_null() {
@@ -37,7 +37,7 @@ impl MonoClassField {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     pub fn mono_type(self) -> Result<Option<MonoType>> {
         let ptr = api()?.field_get_type(self.as_ptr());
         Ok(MonoType::from_ptr(ptr))
@@ -47,7 +47,7 @@ impl MonoClassField {
     ///
     /// # Errors
     ///
-    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    /// Returns [`crate::MonoError::Uninitialized`] if the Mono API has not been initialized.
     ///
     /// # Safety
     ///

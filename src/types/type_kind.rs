@@ -105,3 +105,99 @@ impl From<u32> for TypeKind {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::TypeKind;
+
+    fn check(cases: &[(u32, TypeKind)]) {
+        for &(raw, ref expected) in cases {
+            assert_eq!(TypeKind::from(raw), *expected, "discriminant 0x{raw:02x}");
+        }
+    }
+
+    #[test]
+    fn primitive_variants_map_correctly() {
+        check(&[
+            (0x00, TypeKind::End),
+            (0x01, TypeKind::Void),
+            (0x02, TypeKind::Boolean),
+            (0x03, TypeKind::Char),
+            (0x04, TypeKind::I1),
+            (0x05, TypeKind::U1),
+            (0x06, TypeKind::I2),
+            (0x07, TypeKind::U2),
+            (0x08, TypeKind::I4),
+            (0x09, TypeKind::U4),
+            (0x0a, TypeKind::I8),
+            (0x0b, TypeKind::U8),
+            (0x0c, TypeKind::R4),
+            (0x0d, TypeKind::R8),
+        ]);
+    }
+
+    #[test]
+    fn reference_and_generic_variants_map_correctly() {
+        check(&[
+            (0x0e, TypeKind::String),
+            (0x0f, TypeKind::Ptr),
+            (0x10, TypeKind::ByRef),
+            (0x11, TypeKind::ValueType),
+            (0x12, TypeKind::Class),
+            (0x13, TypeKind::Var),
+            (0x14, TypeKind::Array),
+            (0x15, TypeKind::GenericInst),
+            (0x16, TypeKind::TypedByRef),
+            (0x18, TypeKind::I),
+            (0x19, TypeKind::U),
+            (0x1b, TypeKind::FnPtr),
+            (0x1c, TypeKind::Object),
+            (0x1d, TypeKind::SzArray),
+            (0x1e, TypeKind::MVar),
+        ]);
+    }
+
+    #[test]
+    fn gap_discriminants_produce_other() {
+        // 0x17 and 0x1a are intentional gaps in the MONO_TYPE_* numbering
+        assert_eq!(TypeKind::from(0x17), TypeKind::Other(0x17));
+        assert_eq!(TypeKind::from(0x1a), TypeKind::Other(0x1a));
+    }
+
+    #[test]
+    fn high_discriminant_produces_other() {
+        assert_eq!(TypeKind::from(0xFF), TypeKind::Other(0xFF));
+        assert_eq!(TypeKind::from(100), TypeKind::Other(100));
+    }
+
+    #[test]
+    fn other_variants_equality_uses_inner_value() {
+        assert_eq!(TypeKind::Other(7), TypeKind::Other(7));
+        assert_ne!(TypeKind::Other(7), TypeKind::Other(8));
+    }
+
+    #[test]
+    fn type_kind_is_hashable() {
+        let mut set = HashSet::new();
+        set.insert(TypeKind::I4);
+        set.insert(TypeKind::I4);
+        set.insert(TypeKind::U4);
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn type_kind_is_copy() {
+        let a = TypeKind::Boolean;
+        let b = a;
+        // both are usable after copy
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn type_kind_debug_contains_variant_name() {
+        assert!(format!("{:?}", TypeKind::I4).contains("I4"));
+        assert!(format!("{:?}", TypeKind::Other(99)).contains("Other"));
+    }
+}
