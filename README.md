@@ -24,7 +24,7 @@ Add the dependency:
 
 ```toml
 [dependencies]
-mono-rt = "0.2.0"
+mono-rt = "0.3.0"
 # or, for the latest commit:
 mono-rt = { git = "https://github.com/theo-abel/mono-rt" }
 ```
@@ -85,7 +85,7 @@ modding and runtime inspection; lower-level or rarely-needed functions can be ad
 | String | create from `&str`, convert to `String` | |
 | Array | length, element address | create, set element |
 | Type | kind (`TypeKind` enum), boxing | is_valuetype, get_class |
-| GC | — | pinned handles (`gc_handle_new`/`free`) |
+| GC | â€” | pinned handles (`gc_handle_new`/`free`) |
 | Exceptions | surface as `MonoError::ManagedException` | inspect message, stack trace |
 
 ## Safety
