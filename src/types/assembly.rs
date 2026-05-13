@@ -39,6 +39,10 @@ impl MonoAssembly {
             return Err(MonoError::ImageOpenFailed(s));
         }
 
+        if ptr.is_null() {
+            return Err(MonoError::ImageOpenFailed(s));
+        }
+
         Ok(MonoAssembly::from_ptr(ptr))
     }
 
