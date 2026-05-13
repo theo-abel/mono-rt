@@ -2,7 +2,7 @@ use std::ffi::{CStr, CString};
 use std::ptr;
 
 use super::{MonoClass, mono_handle};
-use crate::{MonoError, Result, api};
+use crate::{MonoError, MonoImageOpenStatus, Result, api};
 
 struct FindContext<'a> {
     target_name: &'a str,
@@ -29,6 +29,53 @@ impl MonoImage {
             return Err(MonoError::Uninitialized);
         }
         Ok(ctx.result)
+    }
+
+    /// Loads raw assembly bytes into a `MonoImage` without touching disk.
+    ///
+    /// The bytes are always copied into Mono's internal heap, so `data` can be freed after
+    /// this call returns.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::ImageOpenFailed`] if Mono rejects the image data.
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn open_from_data(data: &mut [u8]) -> Result<Self> {
+        let data_len = u32::try_from(data.len())
+            .map_err(|_| MonoError::ImageOpenFailed(MonoImageOpenStatus::ImageInvalid))?;
+
+        let mut status: i32 = 0;
+        let ptr = api()?.image_open_from_data(
+            data.as_mut_ptr().cast(),
+            data_len,
+            1,
+            std::ptr::addr_of_mut!(status),
+        );
+
+        let s = MonoImageOpenStatus::from_raw(status);
+        if !s.is_ok() {
+            return Err(MonoError::ImageOpenFailed(s));
+        }
+
+        MonoImage::from_ptr(ptr).ok_or(MonoError::ImageOpenFailed(
+            MonoImageOpenStatus::ImageInvalid,
+        ))
+    }
+
+    /// Returns the Mono-supplied error message for a raw `MonoImageOpenStatus` integer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn open_status_message(status: i32) -> Result<String> {
+        let ptr = api()?.image_strerror(status);
+        if ptr.is_null() {
+            return Ok("unknown status".to_owned());
+        }
+
+        Ok(unsafe { CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned())
     }
 
     /// Resolves a class in this image by namespace and name.
