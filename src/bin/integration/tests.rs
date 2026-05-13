@@ -1,4 +1,7 @@
-use mono_rt::{MonoClass, MonoDomain, MonoError, MonoString, MonoThreadGuard, TypeKind};
+use mono_rt::{
+    MonoAssembly, MonoClass, MonoDomain, MonoError, MonoImage, MonoString, MonoThreadGuard,
+    TypeKind,
+};
 
 use crate::harness::Harness;
 
@@ -29,6 +32,7 @@ pub fn setup_context(fixture_path: &str) -> Result<TestContext, MonoError> {
 ///
 /// `test_thread_guard_attach_drop` is registered last: it detaches the current thread on
 /// drop, so no Mono API calls may follow it.
+#[allow(clippy::too_many_lines)]
 pub fn register_all(h: &mut Harness, ctx: &TestContext) {
     h.run("init_succeeds", || test_init_succeeds(ctx));
     h.run("root_domain_is_some", || test_root_domain_is_some(ctx));
@@ -56,6 +60,14 @@ pub fn register_all(h: &mut Harness, ctx: &TestContext) {
     h.run("field_name_round_trip", || test_field_name_round_trip(ctx));
     h.run("mono_string_round_trip", || {
         test_mono_string_round_trip(ctx)
+    });
+    h.run("class_name_round_trip", || test_class_name_round_trip(ctx));
+    h.run("object_get_class", || test_object_get_class(ctx));
+    h.run("open_from_data_and_load_from_image", || {
+        test_open_from_data_and_load_from_image(ctx)
+    });
+    h.run("image_open_status_message", || {
+        test_image_open_status_message(ctx)
     });
     h.run("thread_guard_attach_drop", || {
         test_thread_guard_attach_drop(ctx)
@@ -178,6 +190,31 @@ fn test_field_name_round_trip(ctx: &TestContext) -> Result<(), MonoError> {
 fn test_mono_string_round_trip(ctx: &TestContext) -> Result<(), MonoError> {
     let s = require(MonoString::new(ctx.domain, "hello")?)?;
     assert_eq_str(&s.to_string_lossy()?, "hello")
+}
+
+fn test_class_name_round_trip(ctx: &TestContext) -> Result<(), MonoError> {
+    assert_eq_str(&ctx.player_class.name()?, "Player")
+}
+
+fn test_object_get_class(ctx: &TestContext) -> Result<(), MonoError> {
+    let obj = require(ctx.player_class.new_object(ctx.domain)?)?;
+    let cls = require(obj.get_class()?)?;
+    assert_eq_str(&cls.name()?, "Player")
+}
+
+fn test_open_from_data_and_load_from_image(ctx: &TestContext) -> Result<(), MonoError> {
+    let mut bytes = std::fs::read(&ctx.fixture_path).map_err(|_| MonoError::Uninitialized)?;
+    let image = MonoImage::open_from_data(&mut bytes)?;
+    require(image.class_from_name("MonoRtTest", "Player")?)?;
+    let asm = require(MonoAssembly::load_from_image(image, None)?)?;
+    let loaded_image = require(asm.image()?)?;
+    require(loaded_image.class_from_name("MonoRtTest", "Player")?)?;
+    Ok(())
+}
+
+fn test_image_open_status_message(_ctx: &TestContext) -> Result<(), MonoError> {
+    let msg = MonoImage::open_status_message(0)?;
+    assert_true(!msg.is_empty())
 }
 
 fn test_thread_guard_attach_drop(_ctx: &TestContext) -> Result<(), MonoError> {

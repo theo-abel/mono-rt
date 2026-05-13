@@ -18,6 +18,8 @@ pub enum MonoError {
     NullByteInName,
     #[error("managed exception was thrown during method invocation")]
     ManagedException(crate::MonoObject),
+    #[error("failed to open assembly image: {0}")]
+    ImageOpenFailed(crate::MonoImageOpenStatus),
 }
 
 #[cfg(test)]
