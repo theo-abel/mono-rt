@@ -8,6 +8,9 @@ use mono_rt::{
     MonoMethod, MonoObject, MonoString, MonoType,
 };
 
+// MonoImageOpenStatus is also tested implicitly via the ImageOpenFailed error path, but the
+// status enum itself only exercises Mono internals and has no init requirement.
+
 fn fake_ptr() -> *mut c_void {
     std::ptr::dangling_mut::<c_void>()
 }
@@ -47,6 +50,20 @@ fn image_class_from_name_requires_init() {
     ));
 }
 
+#[test]
+fn image_open_from_data_requires_init() {
+    let result = MonoImage::open_from_data(&mut [0u8; 4]);
+    assert!(matches!(result, Err(MonoError::Uninitialized)));
+}
+
+#[test]
+fn image_open_status_message_requires_init() {
+    assert!(matches!(
+        MonoImage::open_status_message(0),
+        Err(MonoError::Uninitialized)
+    ));
+}
+
 // MonoAssembly
 
 #[test]
@@ -55,7 +72,28 @@ fn assembly_image_requires_init() {
     assert!(matches!(asm.image(), Err(MonoError::Uninitialized)));
 }
 
+#[test]
+fn assembly_load_from_image_requires_init() {
+    let image = unsafe { MonoImage::from_ptr_unchecked(fake_ptr()) };
+    assert!(matches!(
+        MonoAssembly::load_from_image(image, None),
+        Err(MonoError::Uninitialized)
+    ));
+}
+
+#[test]
+fn assembly_close_requires_init() {
+    let asm = unsafe { MonoAssembly::from_ptr_unchecked(fake_ptr()) };
+    assert!(matches!(asm.close(), Err(MonoError::Uninitialized)));
+}
+
 // MonoClass
+
+#[test]
+fn class_name_requires_init() {
+    let cls = unsafe { MonoClass::from_ptr_unchecked(fake_ptr()) };
+    assert!(matches!(cls.name(), Err(MonoError::Uninitialized)));
+}
 
 #[test]
 fn class_field_lookup_requires_init() {
@@ -159,6 +197,12 @@ fn method_invoke_with_requires_init() {
 }
 
 // MonoObject
+
+#[test]
+fn object_get_class_requires_init() {
+    let obj = unsafe { MonoObject::from_ptr_unchecked(fake_ptr()) };
+    assert!(matches!(obj.get_class(), Err(MonoError::Uninitialized)));
+}
 
 #[test]
 fn object_unbox_requires_init() {

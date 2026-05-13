@@ -3,11 +3,29 @@ use super::{
 };
 use crate::{MonoError, Result, api};
 
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 
 mono_handle!(MonoClass);
 
 impl MonoClass {
+    /// Returns the simple (unqualified) name of this class.
+    ///
+    /// The returned string is copied out of Mono's metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonoError::Uninitialized`] if the Mono API has not been initialized.
+    pub fn name(self) -> Result<String> {
+        let ptr = api()?.class_get_name(self.as_ptr());
+        if ptr.is_null() {
+            return Ok(String::new());
+        }
+
+        Ok(unsafe { CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned())
+    }
+
     /// Looks up a field by name on this class.
     ///
     /// # Errors
@@ -17,6 +35,7 @@ impl MonoClass {
     pub fn field(self, name: &str) -> Result<Option<MonoClassField>> {
         let c_name = CString::new(name).map_err(|_| MonoError::NullByteInName)?;
         let ptr = api()?.class_get_field_from_name(self.as_ptr(), c_name.as_ptr());
+
         Ok(MonoClassField::from_ptr(ptr))
     }
 

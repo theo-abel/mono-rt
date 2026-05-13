@@ -74,7 +74,8 @@ pub use error::{MonoError, Result};
 pub use guard::MonoThreadGuard;
 pub use types::{
     MonoArray, MonoAssembly, MonoClass, MonoClassField, MonoDomain, MonoFunc, MonoImage,
-    MonoMethod, MonoObject, MonoString, MonoThread, MonoType, MonoVTable, TypeKind, Value,
+    MonoImageOpenStatus, MonoMethod, MonoObject, MonoString, MonoThread, MonoType, MonoVTable,
+    TypeKind, Value,
 };
 
 /// Commonly used types, re-exported as a single glob import.
@@ -85,8 +86,8 @@ pub use types::{
 pub mod prelude {
     pub use crate::{
         MonoArray, MonoAssembly, MonoClass, MonoClassField, MonoDomain, MonoError, MonoImage,
-        MonoMethod, MonoObject, MonoString, MonoThread, MonoThreadGuard, MonoType, MonoVTable,
-        Result, TypeKind, Value,
+        MonoImageOpenStatus, MonoMethod, MonoObject, MonoString, MonoThread, MonoThreadGuard,
+        MonoType, MonoVTable, Result, TypeKind, Value,
     };
 }
 

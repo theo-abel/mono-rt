@@ -3,7 +3,7 @@
 
 use std::ffi::c_void;
 
-use mono_rt::{MonoClass, MonoDomain, MonoError, MonoImage, MonoString};
+use mono_rt::{MonoAssembly, MonoClass, MonoDomain, MonoError, MonoImage, MonoString};
 
 fn fake_ptr() -> *mut c_void {
     std::ptr::dangling_mut::<c_void>()
@@ -69,6 +69,15 @@ fn class_method_with_arity_rejects_null_in_name() {
     let cls = unsafe { MonoClass::from_ptr_unchecked(fake_ptr()) };
     assert!(matches!(
         cls.method("Take\0Damage", Some(1)),
+        Err(MonoError::NullByteInName)
+    ));
+}
+
+#[test]
+fn assembly_load_from_image_rejects_null_in_base_dir() {
+    let image = unsafe { MonoImage::from_ptr_unchecked(fake_ptr()) };
+    assert!(matches!(
+        MonoAssembly::load_from_image(image, Some("path\0null")),
         Err(MonoError::NullByteInName)
     ));
 }

@@ -67,6 +67,18 @@ pub(crate) struct MonoBindings {
     mono_field_get_name: unsafe extern "C" fn(*mut c_void) -> *const c_char,
     mono_field_get_type: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
     mono_method_get_name: unsafe extern "C" fn(*mut c_void) -> *const c_char,
+    mono_image_open_from_data: unsafe extern "C" fn(
+        data: *mut c_char,
+        data_len: u32,
+        need_copy: i32,
+        status: *mut i32,
+    ) -> *mut c_void,
+    mono_assembly_load_from_full:
+        unsafe extern "C" fn(*mut c_void, *const c_char, *mut i32, i32) -> *mut c_void,
+    mono_assembly_close: unsafe extern "C" fn(*mut c_void),
+    mono_image_strerror: unsafe extern "C" fn(i32) -> *const c_char,
+    mono_object_get_class: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
+    mono_class_get_name: unsafe extern "C" fn(*mut c_void) -> *const c_char,
 }
 
 impl MonoBindings {
@@ -86,6 +98,8 @@ impl MonoBindings {
             mono_field_static_get_value, mono_object_new, mono_domain_assembly_open,
             mono_string_new, mono_class_get_fields, mono_class_get_methods,
             mono_type_get_type, mono_field_get_name, mono_field_get_type, mono_method_get_name,
+            mono_image_open_from_data, mono_assembly_load_from_full, mono_assembly_close,
+            mono_image_strerror, mono_object_get_class, mono_class_get_name
         )
     }
 
@@ -111,6 +125,16 @@ impl MonoBindings {
 
     pub fn image_get_name(&self, image: *mut c_void) -> *const c_char {
         unsafe { (self.mono_image_get_name)(image) }
+    }
+
+    pub fn image_open_from_data(
+        &self,
+        data: *mut c_char,
+        data_len: u32,
+        need_copy: i32,
+        status: *mut i32,
+    ) -> *mut c_void {
+        unsafe { (self.mono_image_open_from_data)(data, data_len, need_copy, status) }
     }
 
     pub fn class_from_name(
@@ -249,6 +273,32 @@ impl MonoBindings {
 
     pub fn method_get_name(&self, method: *mut c_void) -> *const c_char {
         unsafe { (self.mono_method_get_name)(method) }
+    }
+
+    pub fn assembly_load_from_full(
+        &self,
+        image: *mut c_void,
+        base_dir: *const c_char,
+        status: *mut i32,
+        refonly: i32,
+    ) -> *mut c_void {
+        unsafe { (self.mono_assembly_load_from_full)(image, base_dir, status, refonly) }
+    }
+
+    pub fn assembly_close(&self, assembly: *mut c_void) {
+        unsafe { (self.mono_assembly_close)(assembly) }
+    }
+
+    pub fn image_strerror(&self, status: i32) -> *const c_char {
+        unsafe { (self.mono_image_strerror)(status) }
+    }
+
+    pub fn object_get_class(&self, obj: *mut c_void) -> *mut c_void {
+        unsafe { (self.mono_object_get_class)(obj) }
+    }
+
+    pub fn class_get_name(&self, klass: *mut c_void) -> *const c_char {
+        unsafe { (self.mono_class_get_name)(klass) }
     }
 }
 
